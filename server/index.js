@@ -114,8 +114,8 @@ app.get('/api/dashboard', authenticateToken, async (req, res) => {
 if (process.env.NODE_ENV === 'production') {
   const distPath = join(__dirname, '..', 'dist');
   app.use(express.static(distPath));
-  // SPA fallback – all non-API routes serve index.html
-  app.get('*', (req, res) => {
+  // SPA fallback — Express 5 requires '/{*splat}' instead of bare '*'
+  app.get('/{*splat}', (req, res) => {
     res.sendFile(join(distPath, 'index.html'));
   });
 }
