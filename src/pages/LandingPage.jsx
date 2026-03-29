@@ -5,7 +5,7 @@ import { Search, TrendingUp, ChevronRight } from 'lucide-react';
 
 // --- DATA STRUCTURES ---
 
-const trendingTopics = ['Logical Reasoning', 'TCS Interview Questions', 'Zoho', 'Python MCQs', 'DSA', 'Wipro prep'];
+const trendingTopics = ['DSA', 'Google', 'TCS Ninja', 'Zoho', 'Wipro WILP', 'Arrays', 'Logical Reasoning', 'Amazon', 'DBMS', 'Operating Systems'];
 
 const essentialsTabs = ['Aptitude', 'Programming', 'Company Specific', 'Resources'];
 

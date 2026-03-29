@@ -1,0 +1,1 @@
+mongodb+srv://ritesh813222_db_user:eb8hOSk7xG2iUtJb@cluster0.ry0hgdq.mongodb.net/

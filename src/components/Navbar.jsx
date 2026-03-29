@@ -1,27 +1,58 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Target, ArrowRight } from 'lucide-react';
+import { Target, ArrowRight, LogOut, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import API_BASE from '../config';
 
 const aptitudeCompanies = [
-  'Accenture', 'Amazon', 'Amdocs', 'Aspire Systems', 
-  'Bosch', 'Capgemini', 'Cognizant GenC', 'CTS', 
-  'Deloitte', 'DXC Technology', 'Ernst & Young', 'Genpact'
+  'Google', 'Amazon', 'Microsoft',
+  'Accenture', 'Capgemini', 'Cognizant GenC',
+  'Deloitte', 'Infosys', 'Wipro WILP', 'Zoho'
 ];
 
 const placementExams = [
-  'Accenture', 'Deloitte', 'Zoho', 'TCS NQT', 
-  'TCS Digital', 'TCS Prime', 'TCS Ninja', 'Wipro WILP', 
-  'Cognizant GenC', 'Cognizant GenC Next', 'MulticoreWare', 'Infosys'
+  'TCS Ninja', 'TCS Digital', 'TCS NQT',
+  'Cognizant GenC', 'Cognizant GenC Next',
+  'Wipro WILP', 'Infosys', 'MulticoreWare'
 ];
 
 const Navbar = () => {
   const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
+  const [dbUser, setDbUser] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
   
-  const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
-  const userName = localStorage.getItem('userName') || 'User';
+  const token = localStorage.getItem('token');
+  const isAuthenticated = !!token;
+
+  // Verify the JWT with the actual MongoDB database on navigation
+  useEffect(() => {
+    if (token) {
+      fetch(`${API_BASE}/api/auth/me`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.user) {
+          setDbUser(data.user);
+        } else {
+          // Token invalid or expired
+          handleSignOut();
+        }
+      })
+      .catch(err => console.error("Database connection error verifying session."));
+    } else {
+      setDbUser(null);
+    }
+  }, [location.pathname, token]);
+
+  const handleSignOut = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('isAuthenticated');
+    localStorage.removeItem('userName');
+    setDbUser(null);
+    navigate('/');
+  };
 
   return (
     <nav style={{ 
@@ -29,10 +60,32 @@ const Navbar = () => {
       padding: '1.5rem 2rem', borderBottom: '1px solid rgba(255,255,255,0.05)',
       position: 'relative' // relative for absolute positioning of mega-menu
     }}>
-      <Link to="/" className="logo" style={{ textDecoration: 'none' }}>
-        <Target className="text-gradient" size={28} />
-        <span>Place<span className="text-gradient">Ready</span></span>
-      </Link>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+        <Link to="/" className="logo" style={{ textDecoration: 'none' }}>
+          <Target className="text-gradient" size={28} />
+          <span>Place<span className="text-gradient">Ready</span></span>
+        </Link>
+        
+        {/* Authenticated Database User Display - Top Left Corner */}
+        {isAuthenticated && dbUser && (
+          <div style={{ 
+            display: 'flex', alignItems: 'center', gap: '0.75rem', 
+            paddingLeft: '2rem', borderLeft: '1px solid rgba(255,255,255,0.1)' 
+          }}>
+            <div style={{ 
+              width: '32px', height: '32px', borderRadius: '50%', 
+              background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', fontWeight: 600 
+            }}>
+              {dbUser.name.charAt(0).toUpperCase()}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#f8fafc', lineHeight: 1.2 }}>{dbUser.name}</span>
+              <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Student</span>
+            </div>
+          </div>
+        )}
+      </div>
       
       <div style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
         <Link to="/" className="text-muted" style={{ fontWeight: 500, transition: 'color 0.2s', textDecoration: 'none' }}>Home</Link>
@@ -165,19 +218,27 @@ const Navbar = () => {
           </AnimatePresence>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginLeft: '0.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginLeft: '0.5rem' }}>
           {isAuthenticated ? (
-            <div 
+            <button 
+              onClick={handleSignOut}
               style={{ 
-                color: '#bef264', fontSize: '0.95rem', fontWeight: 600,
-                padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem'
+                background: 'transparent', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#ef4444', 
+                padding: '0.5rem 1rem', borderRadius: '6px', fontSize: '0.9rem', fontWeight: 500,
+                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'all 0.2s' 
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+                e.currentTarget.style.border = '1px solid rgba(239, 68, 68, 0.5)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.border = '1px solid rgba(239, 68, 68, 0.3)';
               }}
             >
-              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(190, 242, 100, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem' }}>
-                {userName.charAt(0).toUpperCase()}
-              </div>
-              {userName.split(' ')[0]}
-            </div>
+              Sign Out
+              <LogOut size={16} />
+            </button>
           ) : (
             <Link 
               to="/login" 
