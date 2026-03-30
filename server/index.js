@@ -86,19 +86,19 @@ app.get('/api/auth/me', authenticateToken, (req, res) => {
 
 // --- ASSESSMENT ROUTES ---
 
-app.post('/api/assessments', authenticateToken, async (req, res) => {
-  const { test_type, subject, score, total } = req.body;
-  if (!test_type || !subject || score === undefined || !total) {
-    return res.status(400).json({ error: 'Missing assessment data components' });
-  }
-  try {
-    const newAssessment = await Assessment.create({ user_id: req.user.id, test_type, subject, score, total });
-    res.status(201).json({ message: 'Assessment saved successfully', id: newAssessment._id });
-  } catch (error) {
-    console.error('Assessment Save Error:', error);
-    res.status(500).json({ error: 'Failed to save assessment' });
-  }
-});
+// app.post('/api/assessments', authenticateToken, async (req, res) => {
+//   const { test_type, subject, score, total } = req.body;
+//   if (!test_type || !subject || score === undefined || !total) {
+//     return res.status(400).json({ error: 'Missing assessment data components' });
+//   }
+//   try {
+//     const newAssessment = await Assessment.create({ user_id: req.user.id, test_type, subject, score, total });
+//     res.status(201).json({ message: 'Assessment saved successfully', id: newAssessment._id });
+//   } catch (error) {
+//     console.error('Assessment Save Error:', error);
+//     res.status(500).json({ error: 'Failed to save assessment' });
+//   }
+// });
 
 app.get('/api/dashboard', authenticateToken, async (req, res) => {
   try {
