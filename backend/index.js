@@ -3,8 +3,6 @@ import cors from 'cors';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
 import connectDB from './utils/db.js';
 
 // Mongoose Models
@@ -13,9 +11,6 @@ import Assessment from './models/Assessment.js';
 import Contribution from './models/Contribution.js';
 
 dotenv.config();
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -145,23 +140,13 @@ app.post('/api/progress', authenticateToken, async (req, res) => {
 
     user.completed_topics = updatedTopics;
     await user.save();
-    
+
     res.json({ message: 'Progress updated', completed_topics: updatedTopics });
   } catch (error) {
     console.error('Progress Update Error:', error);
     res.status(500).json({ error: 'Failed to update progress' });
   }
 });
-
-// --- Serve React Frontend in Production ---
-if (process.env.NODE_ENV === 'production') {
-  const distPath = join(__dirname, '..', 'dist');
-  app.use(express.static(distPath));
-  // SPA fallback — Express 5 requires '/{*splat}' instead of bare '*'
-  app.get('/{*splat}', (req, res) => {
-    res.sendFile(join(distPath, 'index.html'));
-  });
-}
 
 // --- SERVER START ---
 app.listen(PORT, () => {
