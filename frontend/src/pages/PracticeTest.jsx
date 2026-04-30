@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Target, CheckCircle, XCircle, ArrowLeft } from 'lucide-react';
 import { technicalQuestions } from '../data/questions';
+import API_BASE from '../config';
 
 const PracticeTest = () => {
   const { subjectId } = useParams();
@@ -43,7 +44,7 @@ const PracticeTest = () => {
     const token = localStorage.getItem('token');
     if (token) {
       try {
-        await fetch('/api/assessments', {
+        await fetch(`${API_BASE}/api/assessments`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

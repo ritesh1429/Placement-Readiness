@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { BookOpen, User, Mail, Calendar } from 'lucide-react';
+import API_BASE from '../config';
 
 const UserProfile = () => {
   const [testHistory, setTestHistory] = useState([]);
@@ -13,7 +14,7 @@ const UserProfile = () => {
       if (token) {
         try {
           // Fetch Profile Data
-          const userRes = await fetch('/api/auth/me', {
+          const userRes = await fetch(`${API_BASE}/api/auth/me`, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
           if (userRes.ok) {
@@ -22,7 +23,7 @@ const UserProfile = () => {
           }
 
           // Fetch History Data
-          const historyRes = await fetch('/api/dashboard', {
+          const historyRes = await fetch(`${API_BASE}/api/dashboard`, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
           if (historyRes.ok) {

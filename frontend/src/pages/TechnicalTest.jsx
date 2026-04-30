@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Server, Share2, Database, Box, Waypoints, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
 import { technicalQuestions } from '../data/questions';
+import API_BASE from '../config';
 
 const subjects = [
   { id: 'OS', label: 'Operating Systems', icon: Server },
@@ -70,7 +71,7 @@ const TechnicalTest = () => {
       const totalScore = scaledScores.OS + scaledScores.CN + scaledScores.DBMS + scaledScores.OOPS + scaledScores.DSA;
       const totalMax = maxQuestionsDesired * 5;
       try {
-        await fetch('/api/assessments', {
+        await fetch(`${API_BASE}/api/assessments`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

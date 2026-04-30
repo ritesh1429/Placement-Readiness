@@ -7,6 +7,7 @@ import {
   ExternalLink, Zap, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { placementRoadmaps } from '../data/roadmaps';
+import API_BASE from '../config';
 
 const subjects = [
   { id: 'OS',     label: 'Operating Systems',   icon: Server   },
@@ -46,7 +47,7 @@ const SubjectRoadmap = () => {
       const token = localStorage.getItem('token');
       if (token) {
         try {
-          const res = await fetch('/api/progress', { headers: { 'Authorization': `Bearer ${token}` } });
+          const res = await fetch(`${API_BASE}/api/progress`, { headers: { 'Authorization': `Bearer ${token}` } });
           if (res.ok) {
             const data = await res.json();
             setCompletedTopics(new Set(data.completed_topics));
@@ -72,7 +73,7 @@ const SubjectRoadmap = () => {
     const token = localStorage.getItem('token');
     if (token) {
       try {
-        await fetch('/api/progress', {
+        await fetch(`${API_BASE}/api/progress`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({ topicId, completed: newStatus })
