@@ -77,9 +77,13 @@ const ResultsDashboard = () => {
   if (!profileData) {
     return (
       <div style={{ textAlign: 'center', marginTop: '10rem' }}>
-        <h2 style={{ marginBottom: '1rem' }}>No Profile Data Found</h2>
-        <p className="text-muted" style={{ marginBottom: '2rem' }}>Please fill out the assessment form first.</p>
-        <button onClick={() => navigate('/assessment')} className="btn-primary">Go to Assessment Form</button>
+        <h2 style={{ marginBottom: '1rem', fontSize: '2.5rem' }}>Welcome to Your Dashboard!</h2>
+        <p className="text-muted" style={{ marginBottom: '2rem', fontSize: '1.1rem' }}>
+          To generate your personalized readiness report, we first need to understand your current profile.
+        </p>
+        <button onClick={() => navigate('/assessment')} className="btn-primary" style={{ padding: '1rem 2rem' }}>
+          Start Profile Assessment
+        </button>
       </div>
     );
   }

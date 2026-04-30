@@ -3,6 +3,7 @@ import LandingPage from './pages/LandingPage';
 import AssessmentForm from './pages/AssessmentForm';
 import TechnicalTest from './pages/TechnicalTest';
 import PracticeTest from './pages/PracticeTest';
+import UserProfile from './pages/UserProfile';
 import ResultsDashboard from './pages/ResultsDashboard';
 import SubjectRoadmap from './pages/SubjectRoadmap';
 import CompanyPrep from './pages/CompanyPrep';
@@ -24,6 +25,7 @@ function App() {
             <Route path="/practice/:subjectId" element={<PracticeTest />} />
             <Route path="/quiz/:topicId" element={<TopicQuiz />} />
             <Route path="/dashboard" element={<ResultsDashboard />} />
+            <Route path="/profile" element={<UserProfile />} />
             <Route path="/roadmaps" element={<SubjectRoadmap />} />
             <Route path="/company-prep" element={<CompanyPrep />} />
             <Route path="/login" element={<AuthPage />} />

@@ -31,6 +31,7 @@ const SubjectRoadmap = () => {
   const [activeSubject,   setActiveSubject]   = useState(initialSubject);
   const [revealedHints,   setRevealedHints]   = useState({});
   const [expandedPhases,  setExpandedPhases]  = useState({});
+  const [completedTopics, setCompletedTopics] = useState(new Set());
 
   useEffect(() => {
     if (location.state?.focusSubject) {
@@ -39,6 +40,48 @@ const SubjectRoadmap = () => {
       setExpandedPhases({});
     }
   }, [location.state]);
+
+  useEffect(() => {
+    const fetchProgress = async () => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          const res = await fetch('/api/progress', { headers: { 'Authorization': `Bearer ${token}` } });
+          if (res.ok) {
+            const data = await res.json();
+            setCompletedTopics(new Set(data.completed_topics));
+          }
+        } catch (error) {
+          console.error("Failed to fetch progress", error);
+        }
+      }
+    };
+    fetchProgress();
+  }, []);
+
+  const toggleTopic = async (topicId) => {
+    const isCompleted = completedTopics.has(topicId);
+    const newStatus = !isCompleted;
+
+    // Optimistic update
+    const newSet = new Set(completedTopics);
+    if (newStatus) newSet.add(topicId);
+    else newSet.delete(topicId);
+    setCompletedTopics(newSet);
+
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        await fetch('/api/progress', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ topicId, completed: newStatus })
+        });
+      } catch (error) {
+        console.error("Failed to update progress", error);
+      }
+    }
+  };
 
   const toggleHint = (index) =>
     setRevealedHints(prev => ({ ...prev, [index]: !prev[index] }));
@@ -152,6 +195,30 @@ const SubjectRoadmap = () => {
                     </div>
                   )}
                 </div>
+
+                {/* Progress Bar */}
+                {(() => {
+                  const totalItems = currentData.phases.reduce((sum, p) => sum + p.items.length, 0);
+                  const completedItems = Array.from(completedTopics).filter(id => id.startsWith(`${activeSubject}-`)).length;
+                  const percentage = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
+                  
+                  return (
+                    <div style={{ marginTop: '1.5rem', background: 'rgba(255,255,255,0.03)', padding: '1.25rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: 500 }}>
+                        <span style={{ color: 'var(--text-secondary)' }}>Syllabus Completion</span>
+                        <span style={{ color: percentage === 100 ? '#10b981' : 'var(--accent-primary)' }}>{completedItems} / {totalItems} ({percentage}%)</span>
+                      </div>
+                      <div style={{ height: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', overflow: 'hidden' }}>
+                        <motion.div 
+                          initial={{ width: 0 }}
+                          animate={{ width: `${percentage}%` }}
+                          transition={{ duration: 0.5, ease: 'easeOut' }}
+                          style={{ height: '100%', background: percentage === 100 ? '#10b981' : 'var(--accent-primary)', borderRadius: '4px' }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* ── Roadmap Phases ── */}
@@ -249,12 +316,23 @@ const SubjectRoadmap = () => {
                                 <div style={{ padding: '0 1.25rem 1.25rem' }}>
                                   {/* Topics */}
                                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem 1.5rem', marginBottom: '1rem' }}>
-                                    {phase.items.map((item, j) => (
-                                      <div key={j} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
-                                        <CheckCircle2 size={14} color={phase.color || 'var(--accent-primary)'} style={{ marginTop: '0.25rem', flexShrink: 0 }} />
-                                        <span style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{item}</span>
-                                      </div>
-                                    ))}
+                                    {phase.items.map((item, j) => {
+                                      const topicId = `${activeSubject}-${i}-${j}`;
+                                      const isCompleted = completedTopics.has(topicId);
+                                      return (
+                                        <label key={j} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', cursor: 'pointer' }}>
+                                          <input 
+                                            type="checkbox" 
+                                            checked={isCompleted}
+                                            onChange={() => toggleTopic(topicId)}
+                                            style={{ marginTop: '0.3rem', accentColor: phase.color || 'var(--accent-primary)', transform: 'scale(1.1)', cursor: 'pointer' }}
+                                          />
+                                          <span style={{ fontSize: '0.88rem', color: isCompleted ? 'var(--text-muted)' : 'var(--text-secondary)', lineHeight: 1.5, textDecoration: isCompleted ? 'line-through' : 'none', transition: 'all 0.2s' }}>
+                                            {item}
+                                          </span>
+                                        </label>
+                                      );
+                                    })}
                                   </div>
 
                                   {/* Phase Resources */}

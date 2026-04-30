@@ -68,9 +68,10 @@ const Navbar = () => {
         
         {/* Authenticated Database User Display - Top Left Corner */}
         {isAuthenticated && dbUser && (
-          <div style={{ 
+          <Link to="/profile" style={{ 
             display: 'flex', alignItems: 'center', gap: '0.75rem', 
-            paddingLeft: '2rem', borderLeft: '1px solid rgba(255,255,255,0.1)' 
+            paddingLeft: '2rem', borderLeft: '1px solid rgba(255,255,255,0.1)',
+            textDecoration: 'none', cursor: 'pointer'
           }}>
             <div style={{ 
               width: '32px', height: '32px', borderRadius: '50%', 
@@ -83,7 +84,7 @@ const Navbar = () => {
               <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#f8fafc', lineHeight: 1.2 }}>{dbUser.name}</span>
               <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Student</span>
             </div>
-          </div>
+          </Link>
         )}
       </div>
       

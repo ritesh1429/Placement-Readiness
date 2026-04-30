@@ -48,6 +48,12 @@ app.post('/api/auth/register', async (req, res) => {
   if (!email || !password || !name) {
     return res.status(400).json({ error: 'Name, email, and password are required' });
   }
+
+  const isValidPassword = password.length >= 8 && /[a-zA-Z]/.test(password) && /[0-9]/.test(password) && /[^a-zA-Z0-9]/.test(password);
+  if (!isValidPassword) {
+    return res.status(400).json({ error: 'Password does not meet complexity requirements' });
+  }
+
   try {
     const existingUser = await User.findOne({ email });
     if (existingUser) return res.status(409).json({ error: 'Email already exists' });
@@ -107,6 +113,43 @@ app.get('/api/dashboard', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Dashboard Fetch Error:', error);
     res.status(500).json({ error: 'Failed to retrieve dashboard data' });
+  }
+});
+
+// --- Progress Routes ---
+app.get('/api/progress', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json({ completed_topics: user.completed_topics || [] });
+  } catch (error) {
+    console.error('Progress Fetch Error:', error);
+    res.status(500).json({ error: 'Failed to fetch progress' });
+  }
+});
+
+app.post('/api/progress', authenticateToken, async (req, res) => {
+  const { topicId, completed } = req.body;
+  if (!topicId) return res.status(400).json({ error: 'Missing topicId' });
+
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    let updatedTopics = user.completed_topics || [];
+    if (completed && !updatedTopics.includes(topicId)) {
+      updatedTopics.push(topicId);
+    } else if (!completed) {
+      updatedTopics = updatedTopics.filter(id => id !== topicId);
+    }
+
+    user.completed_topics = updatedTopics;
+    await user.save();
+    
+    res.json({ message: 'Progress updated', completed_topics: updatedTopics });
+  } catch (error) {
+    console.error('Progress Update Error:', error);
+    res.status(500).json({ error: 'Failed to update progress' });
   }
 });
 

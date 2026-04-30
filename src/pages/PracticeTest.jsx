@@ -37,8 +37,29 @@ const PracticeTest = () => {
     return correct;
   };
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
     setIsSubmitted(true);
+    
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        await fetch('/api/assessments', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            test_type: 'Practice Test',
+            subject: subjectId,
+            score: calculateScore(),
+            total: currentQuestions.length
+          })
+        });
+      } catch (error) {
+        console.error('Failed to save assessment:', error);
+      }
+    }
   };
 
   const answeredCount = Object.keys(answers).length;

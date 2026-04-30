@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Server, Share2, Database, Box, Waypoints, CheckCircle } from 'lucide-react';
+import { Server, Share2, Database, Box, Waypoints, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
 import { technicalQuestions } from '../data/questions';
 
 const subjects = [
@@ -20,15 +20,32 @@ const TechnicalTest = () => {
   const [activeSubject, setActiveSubject] = useState('OS');
   const [answers, setAnswers] = useState({});
 
+  const [hasStarted, setHasStarted] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(30 * 60); // 30 minutes in seconds
+  const [warningCount, setWarningCount] = useState(0);
+  const [showWarning, setShowWarning] = useState(false);
+
+  const answersRef = useRef(answers);
+  useEffect(() => {
+    answersRef.current = answers;
+  }, [answers]);
+
+  const formatTime = (seconds) => {
+    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const s = (seconds % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  };
+
   const handleOptionSelect = (questionId, option) => {
     setAnswers(prev => ({ ...prev, [questionId]: option }));
   };
 
-  const calculateScores = () => {
+  const calculateScores = async () => {
+    const currentAnswers = answersRef.current;
     const scores = { OS: 0, CN: 0, DBMS: 0, OOPS: 0, DSA: 0 };
     
     technicalQuestions.forEach(q => {
-      if (answers[q.id] === q.answer) {
+      if (currentAnswers[q.id] === q.answer) {
         scores[q.subject] += 1;
       }
     });
@@ -48,7 +65,95 @@ const TechnicalTest = () => {
       maxPossible: maxQuestionsDesired
     };
 
+    const token = localStorage.getItem('token');
+    if (token) {
+      const totalScore = scaledScores.OS + scaledScores.CN + scaledScores.DBMS + scaledScores.OOPS + scaledScores.DSA;
+      const totalMax = maxQuestionsDesired * 5;
+      try {
+        await fetch('/api/assessments', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            test_type: 'Technical Test',
+            subject: 'Overall',
+            score: totalScore,
+            total: totalMax
+          })
+        });
+      } catch (error) {
+        console.error('Failed to save assessment:', error);
+      }
+    }
+
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(err => console.error(err));
+    }
+
     navigate('/dashboard', { state: { profileData, techScores: scaledScores } });
+  };
+
+  const calculateScoresRef = useRef(calculateScores);
+  useEffect(() => {
+    calculateScoresRef.current = calculateScores;
+  }, [calculateScores]);
+
+  const startTest = () => {
+    const elem = document.documentElement;
+    if (elem.requestFullscreen) {
+      elem.requestFullscreen().catch(err => console.error(err));
+    }
+    setHasStarted(true);
+  };
+
+  useEffect(() => {
+    if (!hasStarted) return;
+    
+    // Timer logic
+    const timer = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          alert("Time's up! Submitting test automatically.");
+          calculateScoresRef.current();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    // Fullscreen exit listener
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement) {
+        setWarningCount(prev => {
+          const newCount = prev + 1;
+          if (newCount >= 2) {
+            alert("You exited full-screen twice. The test has been automatically submitted.");
+            calculateScoresRef.current();
+          } else {
+            setShowWarning(true);
+          }
+          return newCount;
+        });
+      }
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, [hasStarted]);
+
+  const returnToTest = () => {
+    const elem = document.documentElement;
+    if (elem.requestFullscreen) {
+      elem.requestFullscreen().catch(err => console.error(err));
+    }
+    setShowWarning(false);
   };
 
   if (!profileData) {
@@ -70,19 +175,67 @@ const TechnicalTest = () => {
   const answeredCount = Object.keys(answers).length;
   const isComplete = answeredCount === testQuestions.length;
 
+  if (!hasStarted) {
+    return (
+      <div style={{ textAlign: 'center', marginTop: '5rem', maxWidth: '600px', margin: '5rem auto', padding: '3rem', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+        <h2 style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>Technical Proficiency Test</h2>
+        <div style={{ textAlign: 'left', marginBottom: '2rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+          <p style={{ marginBottom: '1rem' }}><strong>Duration:</strong> 30 Minutes</p>
+          <p style={{ marginBottom: '1rem' }}><strong>Important Rules:</strong></p>
+          <ul style={{ paddingLeft: '1.5rem', marginBottom: '1rem' }}>
+            <li style={{ marginBottom: '0.5rem' }}>This test is strictly proctored and must be taken in <strong>Full-Screen mode</strong>.</li>
+            <li style={{ marginBottom: '0.5rem' }}>If you exit full-screen mode, you will receive <strong>1 warning</strong>.</li>
+            <li style={{ marginBottom: '0.5rem' }}>If you exit full-screen mode a second time, your test will be <strong>automatically submitted</strong>.</li>
+            <li>When the timer reaches zero, the test will automatically submit.</li>
+          </ul>
+        </div>
+        <button onClick={startTest} className="btn-primary" style={{ padding: '1rem 2rem', fontSize: '1.1rem' }}>
+          Start Test (Enters Full-Screen)
+        </button>
+      </div>
+    );
+  }
+
+  if (showWarning) {
+    return (
+      <div style={{ position: 'fixed', inset: 0, background: '#0f172a', zIndex: 9999, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem', textAlign: 'center' }}>
+        <AlertTriangle size={64} color="#ef4444" style={{ marginBottom: '2rem' }} />
+        <h1 style={{ fontSize: '2.5rem', color: '#ef4444', marginBottom: '1rem' }}>Warning: Full-Screen Exited</h1>
+        <p style={{ fontSize: '1.2rem', color: 'var(--text-secondary)', marginBottom: '2rem', maxWidth: '600px' }}>
+          You have left full-screen mode. This is your <strong>FIRST AND ONLY WARNING</strong>. If you exit full-screen again, your test will be automatically submitted and ended.
+        </p>
+        <button onClick={returnToTest} className="btn-primary" style={{ padding: '1rem 2rem', fontSize: '1.1rem' }}>
+          Return to Full-Screen and Continue
+        </button>
+      </div>
+    );
+  }
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      style={{ maxWidth: '1000px', margin: '3rem auto 5rem' }}
+      style={{ maxWidth: '1000px', margin: '0 auto 5rem', padding: '2rem' }}
     >
-      <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-        <h1 style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>Technical Proficiency Test</h1>
-        <p className="text-muted" style={{ fontSize: '1.1rem' }}>
-          Answer these domain-specific questions to accurately map your skill gaps.
-          ({answeredCount} / {testQuestions.length} completed)
-        </p>
+      {/* Sticky Header with Timer */}
+      <div style={{ 
+        position: 'sticky', top: 0, zIndex: 100, background: 'rgba(15, 23, 42, 0.9)', backdropFilter: 'blur(10px)',
+        padding: '1.5rem 0', borderBottom: '1px solid rgba(255,255,255,0.1)', marginBottom: '3rem',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+      }}>
+        <div>
+          <h1 style={{ fontSize: '1.8rem', margin: 0 }}>Technical Proficiency Test</h1>
+          <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+            Answered: {answeredCount} / {testQuestions.length}
+          </p>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: timeLeft < 300 ? 'rgba(239, 68, 68, 0.2)' : 'rgba(190, 242, 100, 0.1)', padding: '0.75rem 1.25rem', borderRadius: '8px', border: `1px solid ${timeLeft < 300 ? '#ef4444' : '#bef264'}` }}>
+          <Clock size={20} color={timeLeft < 300 ? '#ef4444' : '#bef264'} />
+          <span style={{ fontSize: '1.4rem', fontWeight: 700, color: timeLeft < 300 ? '#ef4444' : '#bef264', fontVariantNumeric: 'tabular-nums' }}>
+            {formatTime(timeLeft)}
+          </span>
+        </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 3fr', gap: '2rem' }}>
@@ -193,6 +346,22 @@ const TechnicalTest = () => {
               ))}
             </motion.div>
           </AnimatePresence>
+
+          {subjects.findIndex(s => s.id === activeSubject) < subjects.length - 1 && (
+            <div style={{ marginTop: '3rem', display: 'flex', justifyContent: 'flex-end', paddingTop: '2rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+              <button 
+                onClick={() => {
+                  const nextIndex = subjects.findIndex(s => s.id === activeSubject) + 1;
+                  setActiveSubject(subjects[nextIndex].id);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="btn-secondary"
+                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+              >
+                Next: {subjects[subjects.findIndex(s => s.id === activeSubject) + 1].label} →
+              </button>
+            </div>
+          )}
         </div>
 
       </div>

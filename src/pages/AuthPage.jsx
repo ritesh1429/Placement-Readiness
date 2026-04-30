@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Target, Mail, Lock, User } from 'lucide-react';
+import { Target, Mail, Lock, User, Check, X } from 'lucide-react';
 import API_BASE from '../config';
 
 const AuthPage = () => {
@@ -9,8 +9,20 @@ const AuthPage = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({ name: '', email: '', password: '' });
 
+  const pwdValidation = {
+    length: formData.password.length >= 8,
+    letter: /[a-zA-Z]/.test(formData.password),
+    number: /[0-9]/.test(formData.password),
+    special: /[^a-zA-Z0-9]/.test(formData.password)
+  };
+  const isPwdValid = pwdValidation.length && pwdValidation.letter && pwdValidation.number && pwdValidation.special;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!isLogin && !isPwdValid) {
+      alert("Please ensure your password meets all requirements.");
+      return;
+    }
     try {
       const endpoint = isLogin ? `${API_BASE}/api/auth/login` : `${API_BASE}/api/auth/register`;
       const body = isLogin 
@@ -194,6 +206,31 @@ const AuthPage = () => {
                 }}
               />
             </div>
+
+            <AnimatePresence>
+              {!isLogin && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  style={{ overflow: 'hidden', fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.3rem', paddingLeft: '0.5rem' }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: pwdValidation.length ? '#10b981' : 'var(--text-secondary)', transition: 'color 0.2s' }}>
+                    {pwdValidation.length ? <Check size={14} /> : <X size={14} />} Minimum 8 characters
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: pwdValidation.letter ? '#10b981' : 'var(--text-secondary)', transition: 'color 0.2s' }}>
+                    {pwdValidation.letter ? <Check size={14} /> : <X size={14} />} At least 1 letter
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: pwdValidation.number ? '#10b981' : 'var(--text-secondary)', transition: 'color 0.2s' }}>
+                    {pwdValidation.number ? <Check size={14} /> : <X size={14} />} At least 1 number
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: pwdValidation.special ? '#10b981' : 'var(--text-secondary)', transition: 'color 0.2s' }}>
+                    {pwdValidation.special ? <Check size={14} /> : <X size={14} />} At least 1 special character
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {isLogin && <div style={{ textAlign: 'right' }}><a href="#" style={{ color: '#bef264', textDecoration: 'none', fontSize: '0.9rem' }}>Forgot password?</a></div>}
 
