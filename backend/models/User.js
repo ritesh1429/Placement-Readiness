@@ -26,7 +26,13 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ['user', 'admin'],
     default: 'user'
-  }
+  },
+  problemSolved: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Problem'
+  }]
+}, {
+  timestamps: true
 });
 
 const User = mongoose.model('User', userSchema);

@@ -10,6 +10,8 @@ import CompanyPrep from './pages/CompanyPrep';
 import TopicQuiz from './pages/TopicQuiz';
 import AuthPage from './pages/AuthPage';
 import Navbar from './components/Navbar';
+import CodingChallenges from './pages/CodingChallenges';
+import CodingEnvironment from './pages/CodingEnvironment';
 
 function App() {
   return (
@@ -28,6 +30,8 @@ function App() {
             <Route path="/profile" element={<UserProfile />} />
             <Route path="/roadmaps" element={<SubjectRoadmap />} />
             <Route path="/company-prep" element={<CompanyPrep />} />
+            <Route path="/coding-challenges" element={<CodingChallenges />} />
+            <Route path="/practice/coding/:problemId" element={<CodingEnvironment />} />
             <Route path="/login" element={<AuthPage />} />
           </Routes>
         </main>

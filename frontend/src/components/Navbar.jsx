@@ -121,6 +121,7 @@ const Navbar = () => {
       <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', flexShrink: 0 }}>
         <Link to="/" className="text-muted" style={{ fontWeight: 500, transition: 'color 0.2s', textDecoration: 'none', whiteSpace: 'nowrap' }}>Home</Link>
         <Link to="/roadmaps" className="text-muted" style={{ fontWeight: 500, transition: 'color 0.2s', textDecoration: 'none', whiteSpace: 'nowrap' }}>Roadmaps</Link>
+        <Link to="/coding-challenges" className="text-muted" style={{ fontWeight: 500, transition: 'color 0.2s', textDecoration: 'none', whiteSpace: 'nowrap' }}>Coding</Link>
         
         {/* Company Prep with Mega Menu */}
         <div 

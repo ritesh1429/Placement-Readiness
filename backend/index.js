@@ -10,6 +10,7 @@ import User from './models/User.js';
 import Assessment from './models/Assessment.js';
 import Contribution from './models/Contribution.js';
 import Company from './models/Company.js';
+import codeRoutes from './routes/codeRoutes.js';
 
 dotenv.config();
 
@@ -226,7 +227,15 @@ app.post('/api/companies/:id/questions', authenticateToken, isAdmin, async (req,
   }
 });
 
-// --- SERVER START ---
+app.get('/api/admin/questions', authenticateToken, isAdmin, async (req, res) => {
+  // Add an endpoint to fetch all questions for an admin panel if needed
+  res.status(200).json({ message: 'Admin questions route working' });
+});
+
+// --- CODE EXECUTION ROUTES ---
+app.use('/api/code', authenticateToken, codeRoutes);
+
+// START SERVER
 app.listen(PORT, () => {
-  console.log(`Backend Server running on http://localhost:${PORT}`);
+  console.log(`✓ Server running on http://localhost:${PORT}`);
 });
