@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Target, ArrowRight, LogOut, User } from 'lucide-react';
+import { Target, ArrowRight, LogOut, User, UserPlus, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import API_BASE from '../config';
 
@@ -18,6 +18,8 @@ const placementExams = [
 
 const Navbar = () => {
   const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
+  const [showAddAdmin, setShowAddAdmin] = useState(false);
+  const [adminForm, setAdminForm] = useState({ name: '', email: '', password: '' });
   const [dbUser, setDbUser] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
@@ -50,8 +52,33 @@ const Navbar = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('isAuthenticated');
     localStorage.removeItem('userName');
+    localStorage.removeItem('userRole');
     setDbUser(null);
     navigate('/');
+  };
+
+  const handleAddAdmin = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/register-admin`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(adminForm)
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert('Admin created successfully!');
+        setShowAddAdmin(false);
+        setAdminForm({ name: '', email: '', password: '' });
+      } else {
+        alert(data.error || 'Failed to create admin');
+      }
+    } catch (err) {
+      alert('Network error');
+    }
   };
 
   return (
@@ -82,7 +109,7 @@ const Navbar = () => {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#f8fafc', lineHeight: 1.2 }}>{dbUser.name}</span>
-              <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Student</span>
+              <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{dbUser.role === 'admin' ? 'Admin' : 'Student'}</span>
             </div>
           </Link>
         )}
@@ -221,25 +248,48 @@ const Navbar = () => {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginLeft: '0.5rem' }}>
           {isAuthenticated ? (
-            <button 
-              onClick={handleSignOut}
-              style={{ 
-                background: 'transparent', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#ef4444', 
-                padding: '0.5rem 1rem', borderRadius: '6px', fontSize: '0.9rem', fontWeight: 500,
-                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'all 0.2s' 
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
-                e.currentTarget.style.border = '1px solid rgba(239, 68, 68, 0.5)';
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.background = 'transparent';
-                e.currentTarget.style.border = '1px solid rgba(239, 68, 68, 0.3)';
-              }}
-            >
-              Sign Out
-              <LogOut size={16} />
-            </button>
+            <>
+              {dbUser?.role === 'admin' && (
+                <button 
+                  onClick={() => setShowAddAdmin(true)}
+                  style={{ 
+                    background: 'transparent', border: '1px solid rgba(190, 242, 100, 0.3)', color: '#bef264', 
+                    padding: '0.5rem 1rem', borderRadius: '6px', fontSize: '0.9rem', fontWeight: 500,
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'all 0.2s' 
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.background = 'rgba(190, 242, 100, 0.1)';
+                    e.currentTarget.style.border = '1px solid rgba(190, 242, 100, 0.5)';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.border = '1px solid rgba(190, 242, 100, 0.3)';
+                  }}
+                >
+                  Add Admin
+                  <UserPlus size={16} />
+                </button>
+              )}
+              <button 
+                onClick={handleSignOut}
+                style={{ 
+                  background: 'transparent', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#ef4444', 
+                  padding: '0.5rem 1rem', borderRadius: '6px', fontSize: '0.9rem', fontWeight: 500,
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'all 0.2s' 
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+                  e.currentTarget.style.border = '1px solid rgba(239, 68, 68, 0.5)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+                }}
+              >
+                Sign Out
+                <LogOut size={16} />
+              </button>
+            </>
           ) : (
             <Link 
               to="/login" 
@@ -256,6 +306,67 @@ const Navbar = () => {
           <Link to="/assessment" className="btn-primary" style={{ padding: '0.5rem 1.25rem', fontSize: '0.95rem', textDecoration: 'none' }}>Analyze Now</Link>
         </div>
       </div>
+
+      {/* Add Admin Modal */}
+      <AnimatePresence>
+        {showAddAdmin && (
+          <div style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100
+          }}>
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              style={{
+                background: '#0f172a', border: '1px solid rgba(255,255,255,0.1)',
+                padding: '2rem', borderRadius: '12px', width: '400px',
+                boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)'
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <h3 style={{ margin: 0, color: '#f8fafc', fontSize: '1.25rem' }}>Add New Admin</h3>
+                <button onClick={() => setShowAddAdmin(false)} style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}>
+                  <X size={20} />
+                </button>
+              </div>
+
+              <form onSubmit={handleAddAdmin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: '0.5rem' }}>Name</label>
+                  <input 
+                    type="text" required
+                    value={adminForm.name} onChange={e => setAdminForm({...adminForm, name: e.target.value})}
+                    style={{ width: '100%', padding: '0.75rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: '#fff' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: '0.5rem' }}>Email</label>
+                  <input 
+                    type="email" required
+                    value={adminForm.email} onChange={e => setAdminForm({...adminForm, email: e.target.value})}
+                    style={{ width: '100%', padding: '0.75rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: '#fff' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: '0.5rem' }}>Password</label>
+                  <input 
+                    type="password" required
+                    value={adminForm.password} onChange={e => setAdminForm({...adminForm, password: e.target.value})}
+                    style={{ width: '100%', padding: '0.75rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: '#fff' }}
+                  />
+                </div>
+                
+                <button type="submit" className="btn-primary" style={{ marginTop: '1rem', padding: '0.75rem' }}>
+                  Create Admin Account
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
     </nav>
   );
 };
