@@ -84,10 +84,13 @@ const Navbar = () => {
   return (
     <nav style={{ 
       display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
-      padding: '1.5rem 2rem', borderBottom: '1px solid rgba(255,255,255,0.05)',
-      position: 'relative' // relative for absolute positioning of mega-menu
+      padding: '1.25rem 2rem', borderBottom: '1px solid rgba(255,255,255,0.05)',
+      position: 'relative', // relative for absolute positioning of mega-menu
+      gap: '1rem',
+      flexWrap: 'nowrap',
+      overflowX: 'auto'
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexShrink: 0 }}>
         <Link to="/" className="logo" style={{ textDecoration: 'none' }}>
           <Target className="text-gradient" size={28} />
           <span>Place<span className="text-gradient">Ready</span></span>
@@ -97,8 +100,8 @@ const Navbar = () => {
         {isAuthenticated && dbUser && (
           <Link to="/profile" style={{ 
             display: 'flex', alignItems: 'center', gap: '0.75rem', 
-            paddingLeft: '2rem', borderLeft: '1px solid rgba(255,255,255,0.1)',
-            textDecoration: 'none', cursor: 'pointer'
+            paddingLeft: '1.5rem', borderLeft: '1px solid rgba(255,255,255,0.1)',
+            textDecoration: 'none', cursor: 'pointer', whiteSpace: 'nowrap'
           }}>
             <div style={{ 
               width: '32px', height: '32px', borderRadius: '50%', 
@@ -115,9 +118,9 @@ const Navbar = () => {
         )}
       </div>
       
-      <div style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
-        <Link to="/" className="text-muted" style={{ fontWeight: 500, transition: 'color 0.2s', textDecoration: 'none' }}>Home</Link>
-        <Link to="/roadmaps" className="text-muted" style={{ fontWeight: 500, transition: 'color 0.2s', textDecoration: 'none' }}>Roadmaps</Link>
+      <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', flexShrink: 0 }}>
+        <Link to="/" className="text-muted" style={{ fontWeight: 500, transition: 'color 0.2s', textDecoration: 'none', whiteSpace: 'nowrap' }}>Home</Link>
+        <Link to="/roadmaps" className="text-muted" style={{ fontWeight: 500, transition: 'color 0.2s', textDecoration: 'none', whiteSpace: 'nowrap' }}>Roadmaps</Link>
         
         {/* Company Prep with Mega Menu */}
         <div 
@@ -134,7 +137,8 @@ const Navbar = () => {
               transition: 'color 0.2s', 
               textDecoration: 'none',
               borderBottom: isMegaMenuOpen ? '2px solid #bef264' : 'none', // lime-green underline like in the screenshot
-              paddingBottom: '0.25rem'
+              paddingBottom: '0.25rem',
+              whiteSpace: 'nowrap'
             }}
           >
             Company Specific
@@ -246,7 +250,7 @@ const Navbar = () => {
           </AnimatePresence>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginLeft: '0.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginLeft: '0.5rem', flexShrink: 0 }}>
           {isAuthenticated ? (
             <>
               {dbUser?.role === 'admin' && (
@@ -255,7 +259,8 @@ const Navbar = () => {
                   style={{ 
                     background: 'transparent', border: '1px solid rgba(190, 242, 100, 0.3)', color: '#bef264', 
                     padding: '0.5rem 1rem', borderRadius: '6px', fontSize: '0.9rem', fontWeight: 500,
-                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'all 0.2s' 
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'all 0.2s',
+                    whiteSpace: 'nowrap'
                   }}
                   onMouseEnter={e => {
                     e.currentTarget.style.background = 'rgba(190, 242, 100, 0.1)';
@@ -275,7 +280,8 @@ const Navbar = () => {
                 style={{ 
                   background: 'transparent', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#ef4444', 
                   padding: '0.5rem 1rem', borderRadius: '6px', fontSize: '0.9rem', fontWeight: 500,
-                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'all 0.2s' 
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'all 0.2s',
+                  whiteSpace: 'nowrap'
                 }}
                 onMouseEnter={e => {
                   e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
@@ -295,7 +301,7 @@ const Navbar = () => {
               to="/login" 
               style={{ 
                 color: '#cbd5e1', textDecoration: 'none', fontSize: '0.95rem', fontWeight: 500,
-                padding: '0.5rem 1rem', transition: 'color 0.2s' 
+                padding: '0.5rem 1rem', transition: 'color 0.2s', whiteSpace: 'nowrap'
               }}
               onMouseEnter={e => e.target.style.color = '#fff'}
               onMouseLeave={e => e.target.style.color = '#cbd5e1'}
@@ -303,7 +309,7 @@ const Navbar = () => {
               Sign In
             </Link>
           )}
-          <Link to="/assessment" className="btn-primary" style={{ padding: '0.5rem 1.25rem', fontSize: '0.95rem', textDecoration: 'none' }}>Analyze Now</Link>
+          <Link to="/assessment" className="btn-primary" style={{ padding: '0.5rem 1.25rem', fontSize: '0.95rem', textDecoration: 'none', whiteSpace: 'nowrap' }}>Analyze Now</Link>
         </div>
       </div>
 
