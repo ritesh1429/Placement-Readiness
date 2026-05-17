@@ -120,6 +120,26 @@ app.post('/api/auth/register-admin', authenticateToken, isAdmin, async (req, res
   }
 });
 
+app.delete('/api/auth/delete-admin', authenticateToken, isAdmin, async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: 'Email is required' });
+
+  try {
+    // Prevent self-deletion
+    if (email === req.user.email) {
+      return res.status(403).json({ error: 'You cannot delete your own admin account' });
+    }
+    const user = await User.findOne({ email, role: 'admin' });
+    if (!user) return res.status(404).json({ error: 'Admin not found with that email' });
+
+    await User.deleteOne({ email, role: 'admin' });
+    res.json({ message: `Admin ${email} deleted successfully` });
+  } catch (error) {
+    console.error('Admin Delete Error:', error);
+    res.status(500).json({ error: 'Server error during admin deletion' });
+  }
+});
+
 // --- ASSESSMENT ROUTES ---
 
 app.post('/api/assessments', authenticateToken, async (req, res) => {
