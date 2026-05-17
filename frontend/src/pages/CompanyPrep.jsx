@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Building2, Plus, ArrowLeft, Lightbulb, ExternalLink,
-  Map, BookOpen, HelpCircle, CheckCircle2, Zap
+  Map, BookOpen, HelpCircle, CheckCircle2, Zap, Trash2
 } from 'lucide-react';
 import { defaultCompanyQuestions } from '../data/companyQuestions';
 import API_BASE from '../config';
@@ -124,6 +124,43 @@ const CompanyPrep = () => {
     }
   };
 
+  const handleDeleteCompany = async (companyId, e) => {
+    e.stopPropagation(); // prevent card click
+    if (!window.confirm('Are you sure you want to delete this company and all its questions?')) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/companies/${companyId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      if (res.ok) {
+        setCompanyData(prev => prev.filter(c => c.id !== companyId));
+      } else {
+        alert('Failed to delete company.');
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteQuestion = async (questionId) => {
+    if (!window.confirm('Delete this question?')) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/companies/${activeCompany.id}/questions/${questionId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setCompanyData(prev => prev.map(c => c.id === activeCompany.id ? updated : c));
+        setActiveCompany(updated);
+      } else {
+        alert('Failed to delete question.');
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const isAdmin = localStorage.getItem('userRole') === 'admin';
 
   // ─── Sub-views ──────────────────────────────────────────────────────────────
@@ -185,8 +222,27 @@ const CompanyPrep = () => {
       {activeCompany.questions.map((q, idx) => (
         <div key={q.id} style={{
           padding: '1.5rem', background: 'rgba(255,255,255,0.02)', borderRadius: '8px',
-          borderLeft: `3px solid ${q.difficulty === 'Hard' ? '#ef4444' : q.difficulty === 'Medium' ? '#f59e0b' : '#10b981'}`
+          borderLeft: `3px solid ${q.difficulty === 'Hard' ? '#ef4444' : q.difficulty === 'Medium' ? '#f59e0b' : '#10b981'}`,
+          position: 'relative'
         }}>
+          {/* Admin delete button for question */}
+          {isAdmin && (
+            <button
+              onClick={() => handleDeleteQuestion(q.id)}
+              title="Delete question"
+              style={{
+                position: 'absolute', top: '1rem', right: '1rem',
+                background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
+                borderRadius: '6px', color: '#ef4444', cursor: 'pointer',
+                padding: '0.3rem 0.5rem', display: 'flex', alignItems: 'center', gap: '0.3rem',
+                fontSize: '0.75rem', transition: 'all 0.2s'
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.2)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; }}
+            >
+              <Trash2 size={13} /> Delete
+            </button>
+          )}
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.75rem' }}>
             <span style={{ fontSize: '0.8rem', padding: '0.25rem 0.75rem', background: 'rgba(255,255,255,0.1)', borderRadius: '20px', color: 'var(--text-secondary)' }}>{q.type}</span>
             <span style={{ fontSize: '0.8rem', fontWeight: 600, color: q.difficulty === 'Hard' ? '#ef4444' : q.difficulty === 'Medium' ? '#f59e0b' : '#10b981' }}>{q.difficulty}</span>
@@ -338,10 +394,28 @@ const CompanyPrep = () => {
                 initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3, delay: index * 0.06 }}
                 onClick={() => { setActiveCompany(company); setActiveTab('questions'); }}
                 className="glass-panel"
-                style={{ padding: '2rem 1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.3s', borderTop: `4px solid ${company.color}` }}
+                style={{ padding: '2rem 1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.3s', borderTop: `4px solid ${company.color}`, position: 'relative' }}
                 onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-5px)'}
                 onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
               >
+                {/* Admin delete company button */}
+                {isAdmin && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleDeleteCompany(company.id); }}
+                    title="Delete company"
+                    style={{
+                      position: 'absolute', top: '0.75rem', right: '0.75rem',
+                      background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)',
+                      borderRadius: '6px', color: '#ef4444', cursor: 'pointer',
+                      padding: '0.3rem 0.5rem', display: 'flex', alignItems: 'center', gap: '0.3rem',
+                      fontSize: '0.75rem', transition: 'all 0.2s', zIndex: 2
+                    }}
+                    onMouseEnter={e => { e.stopPropagation(); e.currentTarget.style.background = 'rgba(239,68,68,0.25)'; }}
+                    onMouseLeave={e => { e.stopPropagation(); e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; }}
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                )}
                 <h2 style={{ fontSize: '1.6rem', fontWeight: 700, margin: '0.5rem 0 0.75rem', textAlign: 'center' }}>{company.name}</h2>
                 <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
                   <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.06)', padding: '0.25rem 0.75rem', borderRadius: '20px' }}>

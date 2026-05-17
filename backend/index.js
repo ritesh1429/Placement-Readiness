@@ -247,6 +247,29 @@ app.post('/api/companies/:id/questions', authenticateToken, isAdmin, async (req,
   }
 });
 
+app.delete('/api/companies/:id', authenticateToken, isAdmin, async (req, res) => {
+  try {
+    const company = await Company.findOneAndDelete({ id: req.params.id });
+    if (!company) return res.status(404).json({ error: 'Company not found' });
+    res.json({ message: 'Company deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to delete company' });
+  }
+});
+
+app.delete('/api/companies/:id/questions/:questionId', authenticateToken, isAdmin, async (req, res) => {
+  try {
+    const company = await Company.findOne({ id: req.params.id });
+    if (!company) return res.status(404).json({ error: 'Company not found' });
+
+    company.questions = company.questions.filter(q => q.id !== req.params.questionId);
+    await company.save();
+    res.json(company);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to delete question' });
+  }
+});
+
 app.get('/api/admin/questions', authenticateToken, isAdmin, async (req, res) => {
   // Add an endpoint to fetch all questions for an admin panel if needed
   res.status(200).json({ message: 'Admin questions route working' });
