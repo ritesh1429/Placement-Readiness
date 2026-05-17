@@ -6,6 +6,7 @@ import {
   Map, BookOpen, HelpCircle, CheckCircle2, Zap
 } from 'lucide-react';
 import { defaultCompanyQuestions } from '../data/companyQuestions';
+import API_BASE from '../config';
 
 // ─── Detail Tabs ─────────────────────────────────────────────────────────────
 const TABS = [
@@ -29,49 +30,63 @@ const CompanyPrep = () => {
 
   const location = useLocation();
 
-  // Load from localStorage or use defaults
   useEffect(() => {
-    const storedData = localStorage.getItem('companyQuestions');
-    // Merge: always include default companies, then overlay any custom additions
-    let loadedData = defaultCompanyQuestions;
-    if (storedData) {
-      const parsed = JSON.parse(storedData);
-      // Keep defaults fresh; merge extra user-added companies
-      const defaultIds = new Set(defaultCompanyQuestions.map(c => c.id));
-      const customOnly = parsed.filter(c => !defaultIds.has(c.id));
-      loadedData = [...defaultCompanyQuestions, ...customOnly];
-    }
-    setCompanyData(loadedData);
+    const fetchCompanies = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/companies`, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        if (res.ok) {
+          const loadedData = await res.json();
+          setCompanyData(loadedData);
 
-    if (location.state?.focusCompany) {
-      const target = loadedData.find(
-        c => c.name.toLowerCase() === location.state.focusCompany.toLowerCase()
-      );
-      if (target) { setActiveCompany(target); setActiveTab('questions'); }
-    } else {
-      setActiveCompany(null);
-    }
+          if (location.state?.focusCompany) {
+            const target = loadedData.find(
+              c => c.name.toLowerCase() === location.state.focusCompany.toLowerCase()
+            );
+            if (target) { setActiveCompany(target); setActiveTab('questions'); }
+          } else {
+            setActiveCompany(null);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch companies:', err);
+      }
+    };
+    
+    fetchCompanies();
   }, [location.state]);
 
-  const handleAddQuestion = (e) => {
+  const handleAddQuestion = async (e) => {
     e.preventDefault();
     if (!newQuestion.question.trim() || !newQuestion.type.trim()) return;
 
-    const updatedData = companyData.map(c => {
-      if (c.id === activeCompany.id) {
-        return { ...c, questions: [...c.questions, { ...newQuestion, id: `custom_${Date.now()}` }] };
+    try {
+      const res = await fetch(`${API_BASE}/api/companies/${activeCompany.id}/questions`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(newQuestion)
+      });
+      
+      if (res.ok) {
+        const updatedCompany = await res.json();
+        const updatedData = companyData.map(c => c.id === activeCompany.id ? updatedCompany : c);
+        setCompanyData(updatedData);
+        setActiveCompany(updatedCompany);
+        setNewQuestion({ type: '', difficulty: 'Medium', question: '', hint: '' });
+        setShowAddForm(false);
+      } else {
+        alert('Failed to add question. Are you an admin?');
       }
-      return c;
-    });
-
-    setCompanyData(updatedData);
-    localStorage.setItem('companyQuestions', JSON.stringify(updatedData));
-    setActiveCompany(updatedData.find(c => c.id === activeCompany.id));
-    setNewQuestion({ type: '', difficulty: 'Medium', question: '', hint: '' });
-    setShowAddForm(false);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const handleAddCompany = (e) => {
+  const handleAddCompany = async (e) => {
     e.preventDefault();
     if (!newCompany.name.trim()) return;
 
@@ -80,32 +95,53 @@ const CompanyPrep = () => {
       name: newCompany.name,
       logo: '',
       color: newCompany.color,
-      roadmap: null,
+      roadmap: { phases: [], tips: [] },
       resources: [],
       questions: []
     };
 
-    const updatedData = [...companyData, newCompanyObj];
-    setCompanyData(updatedData);
-    localStorage.setItem('companyQuestions', JSON.stringify(updatedData));
-    setNewCompany({ name: '', color: '#3b82f6' });
-    setShowAddCompany(false);
+    try {
+      const res = await fetch(`${API_BASE}/api/companies`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(newCompanyObj)
+      });
+      
+      if (res.ok) {
+        const addedCompany = await res.json();
+        const updatedData = [...companyData, addedCompany];
+        setCompanyData(updatedData);
+        setNewCompany({ name: '', color: '#3b82f6' });
+        setShowAddCompany(false);
+      } else {
+        alert('Failed to add company. Are you an admin?');
+      }
+    } catch (err) {
+      console.error(err);
+    }
   };
+
+  const isAdmin = localStorage.getItem('userRole') === 'admin';
 
   // ─── Sub-views ──────────────────────────────────────────────────────────────
   const renderQuestions = () => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
       {/* Add Question Form */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-        <button
-          onClick={() => setShowAddForm(!showAddForm)}
-          className="btn-primary"
-          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: activeCompany.color, border: `1px solid ${activeCompany.color}` }}
-        >
-          {showAddForm ? 'Cancel' : <><Plus size={18} /> Contribute Question</>}
-        </button>
-      </div>
+      {isAdmin && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <button
+            onClick={() => setShowAddForm(!showAddForm)}
+            className="btn-primary"
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: activeCompany.color, border: `1px solid ${activeCompany.color}` }}
+          >
+            {showAddForm ? 'Cancel' : <><Plus size={18} /> Contribute Question</>}
+          </button>
+        </div>
+      )}
 
       <AnimatePresence>
         {showAddForm && (
@@ -262,11 +298,13 @@ const CompanyPrep = () => {
       {!activeCompany ? (
         // ── GRID VIEW ──────────────────────────────────────────────────────────
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1.5rem' }}>
-            <button onClick={() => setShowAddCompany(!showAddCompany)} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              {showAddCompany ? 'Cancel' : <><Plus size={18} /> Add New Company</>}
-            </button>
-          </div>
+          {isAdmin && (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1.5rem' }}>
+              <button onClick={() => setShowAddCompany(!showAddCompany)} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                {showAddCompany ? 'Cancel' : <><Plus size={18} /> Add New Company</>}
+              </button>
+            </div>
+          )}
 
           <AnimatePresence>
             {showAddCompany && (

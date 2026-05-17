@@ -9,6 +9,7 @@ import connectDB from './utils/db.js';
 import User from './models/User.js';
 import Assessment from './models/Assessment.js';
 import Contribution from './models/Contribution.js';
+import Company from './models/Company.js';
 
 dotenv.config();
 
@@ -36,6 +37,14 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
+const isAdmin = (req, res, next) => {
+  if (req.user && req.user.role === 'admin') {
+    next();
+  } else {
+    res.status(403).json({ error: 'Access denied. Admin privileges required.' });
+  }
+};
+
 // --- AUTHENTICATION ROUTES ---
 
 app.post('/api/auth/register', async (req, res) => {
@@ -54,9 +63,9 @@ app.post('/api/auth/register', async (req, res) => {
     if (existingUser) return res.status(409).json({ error: 'Email already exists' });
 
     const passwordHash = await bcrypt.hash(password, 10);
-    const newUser = await User.create({ name, email, password_hash: passwordHash });
-    const token = jwt.sign({ id: newUser._id, email, name }, SECRET_KEY, { expiresIn: '24h' });
-    res.status(201).json({ message: 'User registered successfully', token, user: { id: newUser._id, name, email } });
+    const newUser = await User.create({ name, email, password_hash: passwordHash, role: 'user' });
+    const token = jwt.sign({ id: newUser._id, email, name, role: newUser.role }, SECRET_KEY, { expiresIn: '24h' });
+    res.status(201).json({ message: 'User registered successfully', token, user: { id: newUser._id, name, email, role: newUser.role } });
   } catch (error) {
     console.error('Registration Error:', error);
     res.status(500).json({ error: 'Server error during registration' });
@@ -73,16 +82,41 @@ app.post('/api/auth/login', async (req, res) => {
     const match = await bcrypt.compare(password, user.password_hash);
     if (!match) return res.status(400).json({ error: 'Invalid email or password' });
 
-    const token = jwt.sign({ id: user._id, email: user.email, name: user.name }, SECRET_KEY, { expiresIn: '24h' });
-    res.json({ message: 'Logged in successfully', token, user: { id: user._id, name: user.name, email: user.email } });
+    const token = jwt.sign({ id: user._id, email: user.email, name: user.name, role: user.role }, SECRET_KEY, { expiresIn: '24h' });
+    res.json({ message: 'Logged in successfully', token, user: { id: user._id, name: user.name, email: user.email, role: user.role } });
   } catch (error) {
     console.error('Login Error:', error);
     res.status(500).json({ error: 'Server error during login' });
   }
 });
 
-app.get('/api/auth/me', authenticateToken, (req, res) => {
-  res.json({ user: req.user });
+app.get('/api/auth/me', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('-password_hash');
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json({ user });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.post('/api/auth/register-admin', authenticateToken, isAdmin, async (req, res) => {
+  const { name, email, password } = req.body;
+  if (!email || !password || !name) {
+    return res.status(400).json({ error: 'Name, email, and password are required' });
+  }
+
+  try {
+    const existingUser = await User.findOne({ email });
+    if (existingUser) return res.status(409).json({ error: 'Email already exists' });
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    const newAdmin = await User.create({ name, email, password_hash: passwordHash, role: 'admin' });
+    res.status(201).json({ message: 'Admin created successfully', user: { id: newAdmin._id, name, email, role: newAdmin.role } });
+  } catch (error) {
+    console.error('Admin Registration Error:', error);
+    res.status(500).json({ error: 'Server error during admin registration' });
+  }
 });
 
 // --- ASSESSMENT ROUTES ---
@@ -145,6 +179,50 @@ app.post('/api/progress', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Progress Update Error:', error);
     res.status(500).json({ error: 'Failed to update progress' });
+  }
+});
+
+// --- COMPANY ROUTES ---
+
+app.get('/api/companies', authenticateToken, async (req, res) => {
+  try {
+    const companies = await Company.find();
+    res.json(companies);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch companies' });
+  }
+});
+
+app.post('/api/companies', authenticateToken, isAdmin, async (req, res) => {
+  const { id, name, logo, color, roadmap, resources, questions } = req.body;
+  try {
+    const company = await Company.create({ id, name, logo, color, roadmap, resources, questions });
+    res.status(201).json(company);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to create company' });
+  }
+});
+
+app.post('/api/companies/:id/questions', authenticateToken, isAdmin, async (req, res) => {
+  const { type, difficulty, question, hint } = req.body;
+  try {
+    const company = await Company.findOne({ id: req.params.id });
+    if (!company) return res.status(404).json({ error: 'Company not found' });
+
+    const newQuestion = {
+      id: `custom_${Date.now()}`,
+      type,
+      difficulty,
+      question,
+      hint
+    };
+    
+    company.questions.push(newQuestion);
+    await company.save();
+    
+    res.status(201).json(company);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to add question' });
   }
 });
 

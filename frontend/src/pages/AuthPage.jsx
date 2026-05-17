@@ -7,6 +7,7 @@ import API_BASE from '../config';
 const AuthPage = () => {
   const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
+  const [authMode, setAuthMode] = useState('user'); // 'user' or 'admin'
   const [formData, setFormData] = useState({ name: '', email: '', password: '' });
 
   const pwdValidation = {
@@ -42,10 +43,16 @@ const AuthPage = () => {
         return;
       }
 
+      if (isLogin && authMode === 'admin' && data.user.role !== 'admin') {
+        alert('Access denied. You do not have admin privileges.');
+        return;
+      }
+
       // Store real token and establish verified session
       localStorage.setItem('isAuthenticated', 'true');
       localStorage.setItem('token', data.token);
       localStorage.setItem('userName', data.user.name);
+      localStorage.setItem('userRole', data.user.role || 'user');
       navigate('/dashboard'); 
     } catch (err) {
       console.error(err);
@@ -96,6 +103,24 @@ const AuthPage = () => {
             <p style={{ color: 'var(--text-secondary)' }}>
               {isLogin ? 'Enter your details to access your dashboard.' : 'Start your placement preparation journey.'}
             </p>
+          </div>
+
+          {/* Role Toggle */}
+          <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', padding: '0.25rem', borderRadius: '8px', marginBottom: '2rem' }}>
+            <button 
+              type="button"
+              onClick={() => { setAuthMode('user'); setIsLogin(true); }}
+              style={{ flex: 1, padding: '0.75rem', border: 'none', background: authMode === 'user' ? 'rgba(190, 242, 100, 0.1)' : 'transparent', color: authMode === 'user' ? '#bef264' : 'var(--text-muted)', borderRadius: '6px', cursor: 'pointer', fontWeight: authMode === 'user' ? 600 : 400, transition: 'all 0.2s' }}
+            >
+              Student
+            </button>
+            <button 
+              type="button"
+              onClick={() => { setAuthMode('admin'); setIsLogin(true); }}
+              style={{ flex: 1, padding: '0.75rem', border: 'none', background: authMode === 'admin' ? 'rgba(190, 242, 100, 0.1)' : 'transparent', color: authMode === 'admin' ? '#bef264' : 'var(--text-muted)', borderRadius: '6px', cursor: 'pointer', fontWeight: authMode === 'admin' ? 600 : 400, transition: 'all 0.2s' }}
+            >
+              Admin
+            </button>
           </div>
 
           {/* Social Logins */}
@@ -240,15 +265,21 @@ const AuthPage = () => {
           </form>
 
           {/* Toggle View */}
-          <div style={{ textAlign: 'center', marginTop: '2rem', color: 'var(--text-secondary)' }}>
-            {isLogin ? "Don't have an account? " : "Already have an account? "}
-            <button 
-              onClick={() => setIsLogin(!isLogin)}
-              style={{ background: 'transparent', border: 'none', color: '#bef264', fontWeight: 600, cursor: 'pointer', padding: 0, fontSize: '1rem' }}
-            >
-              {isLogin ? 'Sign Up' : 'Log In'}
-            </button>
-          </div>
+          {authMode === 'user' ? (
+            <div style={{ textAlign: 'center', marginTop: '2rem', color: 'var(--text-secondary)' }}>
+              {isLogin ? "Don't have an account? " : "Already have an account? "}
+              <button 
+                onClick={() => setIsLogin(!isLogin)}
+                style={{ background: 'transparent', border: 'none', color: '#bef264', fontWeight: 600, cursor: 'pointer', padding: 0, fontSize: '1rem' }}
+              >
+                {isLogin ? 'Sign Up' : 'Log In'}
+              </button>
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center', marginTop: '2rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+              Admins can only be created by existing admins inside the dashboard.
+            </div>
+          )}
           
         </div>
       </motion.div>
